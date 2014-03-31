@@ -1,0 +1,89 @@
+<?php
+
+namespace com\PaymentGatewayHandlers;
+
+/**
+*
+*
+* @property com\PaymentGatewayHandlers\IPaymentGatewayHandler gateway
+*/ 
+class PaymentGatewayHandler extends CComponent
+{
+	private $gateway = null;
+	private $parsedResponseData = array();
+	private $rawResponseData = array();
+	
+	public function init($gateway_type)
+	{
+		$gateway_type = 'com\PaymentGatewayHandlers\Handlers\\' . $gateway_type;
+		if(class_exists($gateway_type))
+		{
+			$this->gateway = new $gateway_type();
+		}
+	}
+	
+	public function setRequestData(array $data)
+	{
+		$this->gateway->requestData = $data;
+	}
+	
+	public function getParsedResponseData()
+	{
+		return $this->parsedResponseData;
+	}
+	
+	public function getRawResponseData()
+	{
+		return $this->rawResponseData;
+	}
+	
+	public function getResponseParameter($parameter)
+	{
+		if(isset($this->parsedResponseData[$parameter]))
+		{
+			return $this->parsedResponseData[$parameter];
+		}
+		else 
+		{
+			return false;
+		}
+	}
+	
+	private checkRequiredFields()
+	{
+		$ret_val = true;
+	
+		foreach($this->gateway->requiredParams() as $req_param)
+		{
+			if(!isset($this->gateway->requestData[$req_param])
+			{
+				$ret_val = false;
+			}
+		}
+
+		return $ret_val;
+	}
+	
+	public function execute()
+	{
+		$ret_val = false
+	
+		if(checkRequiredFields())
+		{
+			$this->rawResponseData = $this->gateway->sendRequest($this->gateway->requestData);
+			if(!is_null($this->rawResponseData))
+			{
+				$ret_val = true;
+				$this->parsedResponseData = $this->gateway->parseResponse($this->rawResponseData);
+			}
+		}
+		return $ret_val;
+	}
+	
+	public function validate()
+	{
+		return $this->gateway->validate($this->parsedResponseData);
+	}
+}
+
+?>
