@@ -148,6 +148,8 @@ class PayTrace implements com\PaymentGatewayHandlers\IPaymentGatewayHandler
 		{
 			throw new CException('An error occurred: There was no response from the payment gateway.');
 		}
+		
+		return true;
 	}
 }
 ?>
