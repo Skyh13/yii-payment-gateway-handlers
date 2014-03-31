@@ -1,5 +1,7 @@
 <?php
 
+namespace com\PaymentGatewayHandlers\Handlers;
+
 class PayTraceTransMethods
 {
 	const NORMAL_TRANSACTION = "ProcessTranx";
@@ -11,17 +13,17 @@ class PayTraceTransTypes
 	const SALE = "Sale";
 }
 
-class PayTraceRequestParams
+class PayTraceRequestParms
 {
 	const USERNAME = "UN";
 	const PASSWORD = "PSWD";
 	const AMOUNT = "AMOUNT";
-	const CARD_NUMBER = "CC";
-	const CSC = "CSC";
-	const DESCRIPTION = "DESCRIPTION";
+	const CC_NUMBER = "CC";
+	const CSC ="CSC";
+	CONST DESC = "DESCRIPTION";
 	const BILLING_NAME = "BNAME";
-	const BILLING_ADDRESS1 = "BADDRESS";
-	const BILLING_ADDRESS2 = "BADDRESS2";
+	const BILLING_ADDRESS = "BADDRESS";
+	const BILLING_ADDRESS_2 = "BADDRESS2";
 	const BILLING_STATE = "BSTATE";
 	const BILLING_ZIP = "BZIP";
 	const BILLING_CITY = "BCITY";
@@ -32,10 +34,10 @@ class PayTraceRequestParams
 	const METHOD = "METHOD"; // ProcessTranx
 	const TERMS = "TERMS";
 	const TRANS_TYPE = "TRANXTYPE";// Sale
-	const TEST = "TEST";	
+	const TEST = "TEST";
 }
 
-class PayTraceResponseParams
+class PayTraceResponseParms
 {
 	const RESPONSE = "RESPONSE";
 	const TRANS_ID = "TRANSACTIONID";
@@ -46,40 +48,39 @@ class PayTraceResponseParams
 	const ERROR = "ERROR"; 
 }
 
-class PayTraceHandler extends CComponent
+class PayTrace implements com\PaymentGatewayHandlers\IPaymentGatewayHandler
 {	
 	private $header = array("MIME-Version: 1.0","Content-type: application/x-www-form-urlencoded","Contenttransfer-encoding: text");
-	private $request = array();
-	private $response = array();
-	
-	public $url = "https://paytrace.com/api/default.pay";
-	
-	public function setRequestData(array $data)
-	{
-		foreach($data as $key=>$value)
-		{
-			$this->request[$key] = $value;
-		}
-	}
-	
-	public function setRequestParameter($parameter, $value)
-	{
-		$this->request[$parameter] = $value;
-	}
-	
-	public function getResponseParameter($parameter)
-	{
-		if(isset($this->response[$parameter]))
-		{
-			return $this->response[$parameter];
-		}
-		else 
-		{
-			return false;
-		}
-	}
+	private $url = "https://paytrace.com/api/default.pay";
+	public $requestData = array();
 
-	private function parseResponse($res)
+	public function requiredParams()
+	{
+		return array(
+		 PayTraceRequestParms::USERNAME, 
+		 PayTraceRequestParms::PASSWORD,
+		 PayTraceRequestParms::AMOUNT, 
+		 PayTraceRequestParms::CC_NUMBER,
+		 PayTraceRequestParms::CSC, 
+		 PayTraceRequestParms::DESC,
+		 PayTraceRequestParms::BILLING_NAME, 
+		 PayTraceRequestParms::BILLING_ADDRESS, 
+		 PayTraceRequestParms::BILLING_ADDRESS_2, 
+		 PayTraceRequestParms::BILLING_STATE,
+		 PayTraceRequestParms::BILLING_ZIP,
+		 PayTraceRequestParms::BILLING_CITY,
+		 PayTraceRequestParms::BILLING_COUNTRY, 
+		 PayTraceRequestParms::EMAIL,
+		 PayTraceRequestParms::EXP_MONTH, 
+		 PayTraceRequestParms::EXP_YEAR,
+		 PayTraceRequestParms::METHOD, // ProcessTranx
+		 PayTraceRequestParms::TERMS,
+		 PayTraceRequestParms::TRANS_TYPE, // Sale
+		 PayTraceRequestParms::TEST		
+		);
+	}
+	
+	public function parseResponse($res)
 	{
 		$responseArr = explode('|', $res);
 		foreach ($responseArr as $pair ){
@@ -87,16 +88,16 @@ class PayTraceHandler extends CComponent
 			if($tmp != false &&
 				isset($tmp[1]))
 			{
-				$this->response[$tmp[0]] = $tmp[1];
+				$this->responseData[$tmp[0]] = $tmp[1];
 			}
 		}
 	}
 	
-	private function SendPayTraceAPIRequest(array $request)
+	public function sendRequest(array $request)
 	{
 		$str_request = "parmlist=";
 		$tmp = "";
-		foreach($request as $key=>$value)
+		foreach($this->requestData as $key=>$value)
 		{
 			$tmp .= $key . '~' . $value . '|';
 		}
@@ -123,30 +124,23 @@ class PayTraceHandler extends CComponent
 		return $response;
 	}
 	
-	public function execute()
+	public function validate(array $parsedResponseData)
 	{
-		$response = $this->SendPayTraceAPIRequest($this->request);
-		$this->parseResponse($response);
-		return $this->response;
-	}
-	
-	public function validate()
-	{
-		if($this->response != null)
+		if($parsedResponseData != null)
 		{
-			if(isset($this->response[PayTraceResponseParams::ERROR]))
+			if(isset($parsedResponseData[PayTraceResponseParams::ERROR]))
 			{
-				throw new CException('Transaction was not successful per the following error: ' . $this->response[PayTraceResponseParams::ERROR]);
+				throw new CException('Transaction was not successful per the following error: ' . $parsedResponseData[PayTraceResponseParams::ERROR]);
 			}
 			else 
 			{
-				if(isset($this->response[PayTraceResponseParams::APP_CODE]))
+				if(isset($parsedResponseData[PayTraceResponseParams::APP_CODE]))
 				{
-					return $this->response[PayTraceResponseParams::RESPONSE];
+					return $parsedResponseData[PayTraceResponseParams::RESPONSE];
 				}
 				else
 				{
-					throw new CException('The Credit Transaction was NOT Approved, with the following error: ' . $this->response[PayTraceResponseParams::RESPONSE]);
+					throw new CException('The Credit Transaction was NOT Approved, with the following error: ' . $parsedResponseData[PayTraceResponseParams::RESPONSE]);
 				}
 			}
 		}
