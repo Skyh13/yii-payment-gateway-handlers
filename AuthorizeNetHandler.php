@@ -1,5 +1,7 @@
 <?php
 
+namespace com\PaymentGatewayHandlers\Handlers;
+
 class AuthorizeNetTransMethods
 {
 	const NORMAL_TRANSACTION = "CC";
@@ -12,47 +14,47 @@ class AuthorizeNetTransTypes
 
 class AuthorizeNetRequestParams
 {
-	const LOGIN = "x_login";
-	const TRANS_KEY = "x_tran_key";
-	const AMOUNT = "x_amount";
-	const CARD_NUMBER = "x_card_num";
-	const CSC = "x_card_code";
-	const DESCRIPTION = "x_description";
-	const DELIM_CHAR = "x_delim_char";
-	const DELIM_DATA = "x_delim_data";
-	const BILLING_FIRST_NAME = "x_first_name";
-	const BILLING_LAST_NAME = "x_last_name";
-	const BILLING_ADDRESS1 = "x_address";
-	const BILLING_ADDRESS2 = "x_address_2";
-	const BILLING_STATE = "x_state";
-	const BILLING_ZIP = "x_zip";
-	const BILLING_CITY = "x_city";
-	const BILLING_COUNTRY = "x_country";
-	const EMAIL = "x_email";
-	const EXP_DATE = "x_exp_date";
-	const METHOD = "x_method";
-	const RELAY_RESPONSE = "x_relay_response";
-	const TRANS_TYPE = "x_type";// Sale
-	const TEST = "x_test_request";
-	const VERSION = "x_version";	
+	const LOGIN = 				"x_login";
+	const TRANS_KEY = 			"x_tran_key";
+	const AMOUNT = 				"x_amount";
+	const CARD_NUMBER = 		"x_card_num";
+	const CSC = 				"x_card_code";
+	const DESCRIPTION = 		"x_description";
+	const DELIM_CHAR = 			"x_delim_char";
+	const DELIM_DATA = 			"x_delim_data";
+	const BILLING_FIRST_NAME = 	"x_first_name";
+	const BILLING_LAST_NAME = 	"x_last_name";
+	const BILLING_ADDRESS1 = 	"x_address";
+	const BILLING_ADDRESS2 = 	"x_address_2";
+	const BILLING_STATE = 		"x_state";
+	const BILLING_ZIP = 		"x_zip";
+	const BILLING_CITY = 		"x_city";
+	const BILLING_COUNTRY = 	"x_country";
+	const EMAIL = 				"x_email";
+	const EXP_DATE = 			"x_exp_date";
+	const METHOD = 				"x_method";
+	const RELAY_RESPONSE = 		"x_relay_response";
+	const TRANS_TYPE = 			"x_type";// Sale
+	const TEST = 				"x_test_request";
+	const VERSION = 			"x_version";	
 }
 
 class AuthorizeNetResponseParams
 {
-	const RESPONSE_CODE = 0;
-	const RESPONSE_SUBCODE = 1;
-	const REASON_CODE = 2;
-	const REASON_TEXT = 3;
-	const AUTH_CODE = 4;
-	const AVS_RESPONSE = 5;
+	const RESPONSE_CODE = 		0;
+	const RESPONSE_SUBCODE = 	1;
+	const REASON_CODE = 		2;
+	const REASON_TEXT = 		3;
+	const AUTH_CODE = 			4;
+	const AVS_RESPONSE = 		5;
 }
 
 class AuthorizeNetResponseCodes
 {
-	const APPROVED = 1;
-	const DECLINED = 2;
-	const ERROR = 3;
-	const HELD = 4;
+	const APPROVED = 	1;
+	const DECLINED = 	2;
+	const ERROR = 		3;
+	const HELD = 		4;
 }
 
 class AuthorizeNetAVSResponseCodes
@@ -60,48 +62,49 @@ class AuthorizeNetAVSResponseCodes
 	const NO_MATCH = "N";
 }
 
-class AuthorizeNetHandler extends CComponent
+class AuthorizeNet implements com\PaymentGatewayHandlers\IPaymentGatewayHandler
 {	
-	private $header = array("MIME-Version: 1.0","Content-type: application/x-www-form-urlencoded","Contenttransfer-encoding: text");
-	private $request = array();
-	private $response = array();
+	private $header; = array("MIME-Version: 1.0","Content-type: application/x-www-form-urlencoded","Contenttransfer-encoding: text");
+	private $url = "https://secure.authorize.net/gateway/transact.dll";
+	public $requestData = array();
 	
-	public $url = "https://secure.authorize.net/gateway/transact.dll";
-	
-	public function setRequestData(array $data)
+	public function requiredParams()
 	{
-		foreach($data as $key=>$value)
-		{
-			$this->request[$key] = $value;
-		}
+		return array(
+			AuthorizeNetRequestParams::LOGIN,
+			AuthorizeNetRequestParams::TRANS_KEY,
+			AuthorizeNetRequestParams::AMOUNT,
+			AuthorizeNetRequestParams::CARD_NUMBER,
+			AuthorizeNetRequestParams::CSC,
+			AuthorizeNetRequestParams::DESCRIPTION,
+			AuthorizeNetRequestParams::DELIM_CHAR,
+			AuthorizeNetRequestParams::DELIM_DATA,
+			AuthorizeNetRequestParams::BILLING_FIRST_NAME,
+			AuthorizeNetRequestParams::BILLING_LAST_NAME,
+			AuthorizeNetRequestParams::BILLING_ADDRESS1,
+			AuthorizeNetRequestParams::BILLING_ADDRESS2,
+			AuthorizeNetRequestParams::BILLING_STATE,
+			AuthorizeNetRequestParams::BILLING_ZIP,
+			AuthorizeNetRequestParams::BILLING_CITY,
+			AuthorizeNetRequestParams::BILLING_COUNTRY,
+			AuthorizeNetRequestParams::EMAIL,
+			AuthorizeNetRequestParams::EXP_DATE,
+			AuthorizeNetRequestParams::METHOD,
+			AuthorizeNetRequestParams::RELAY_RESPONSE,
+			AuthorizeNetRequestParams::TRANS_TYPE,
+			AuthorizeNetRequestParams::TEST,
+			AuthorizeNetRequestParams::VERSION						
+		);
 	}
 	
-	public function setRequestParameter($parameter, $value)
-	{
-		$this->request[$parameter] = $value;
-	}
-	
-	public function getResponseParameter($parameter)
-	{
-		if(isset($this->response[$parameter]))
-		{
-			return $this->response[$parameter];
-		}
-		else 
-		{
-			return false;
-		}
-	}
-
-	private function parseResponse($res)
+	public function parseResponse(array $res)
 	{
 		// This line takes the response and breaks it into an array using the specified delimiting character
-		$response = explode($this->request[AuthorizeNetRequestParams::DELIM_CHAR],$res);
-		$this->response = $response;
+		return explode($this->requestData[AuthorizeNetRequestParams::DELIM_CHAR], $res);
 	}
 	
-	private function SendAuthorizeNetAPIRequest(array $request)
-	{		
+	private function sendRequest(array $request)
+	{
 		// This section takes the input fields and converts them to the proper format
 		// for an http post.  For example: "x_login=username&x_tran_key=a1B2c3D4"
 		$post_string = "";
@@ -126,33 +129,26 @@ class AuthorizeNetHandler extends CComponent
 		return $post_response;
 	}
 	
-	public function execute()
+	public function validate(array $parsedResponseData)
 	{
-		$response = $this->SendAuthorizeNetAPIRequest($this->request);
-		$this->parseResponse($response);
-		return $this->response;
-	}
-	
-	public function validate()
-	{
-		if($this->response != null)
+		if($parsedResponseData != null)
 		{
-			switch ($this->response[AuthorizeNetResponseParams::RESPONSE_CODE])
+			switch ($parsedResponseData[AuthorizeNetResponseParams::RESPONSE_CODE])
 			{
 				case AuthorizeNetResponseCodes::APPROVED:
 				break;
 				
 				case AuthorizeNetResponseCodes::DECLINED:
-					throw new CException('The Credit Transaction was NOT Approved, with the following error: ' . $this->response[AuthorizeNetResponseParams::REASON_TEXT]);
+					throw new CException('The Credit Transaction was NOT Approved, with the following error: ' . $parsedResponseData[AuthorizeNetResponseParams::REASON_TEXT]);
 				break;
 				
 				case AuthorizeNetResponseCodes::HELD:
-					throw new CException('Transaction has been held for review, per the following error: ' . $this->response[AuthorizeNetResponseParams::REASON_TEXT]);
+					throw new CException('Transaction has been held for review, per the following error: ' . $parsedResponseData[AuthorizeNetResponseParams::REASON_TEXT]);
 				break;
 				
 				case AuthorizeNetResponseCodes::ERROR:
 				default:
-					throw new CException('Transaction was not successful per the following error: ' . $this->response[AuthorizeNetResponseParams::REASON_TEXT]);
+					throw new CException('Transaction was not successful per the following error: ' . $parsedResponseData[AuthorizeNetResponseParams::REASON_TEXT]);
 				break;
 				
 			}
