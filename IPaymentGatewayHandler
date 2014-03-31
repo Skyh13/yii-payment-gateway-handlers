@@ -1,0 +1,17 @@
+<?php
+
+namespace com\PaymentGatewayHandlers;
+
+interface IPaymentGatewayHandler
+{
+	private $header;
+	private $requestData;
+	private $url;
+	
+	public function requiredParams();
+	public function parseResponse(array $res);
+	public function sendRequest(array $request);
+	public function validate(array $parsedResponseData);
+}
+
+?>
